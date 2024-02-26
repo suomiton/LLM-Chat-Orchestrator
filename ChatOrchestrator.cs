@@ -1,4 +1,6 @@
-﻿namespace Orchestrator {
+﻿using Spectre.Console;
+
+namespace Orchestrator {
     internal class ChatOrchestrator : IDisposable {
         private IReadOnlyCollection<ChatAgent>? Agents { get; init; }
         private readonly HttpClient Client = new();
@@ -41,9 +43,9 @@
         private async Task<string> Chat(string message, ChatAgent agent, CancellationToken token) {
             var response = await agent.SendMessageAndProcessAnswer(message, Client, token);
 
-            Console.WriteLine($"\n\n");
-            Console.WriteLine($">> {agent.Name} <<");
-            Console.WriteLine(response);
+            AnsiConsole.MarkupLine($"\n\n");
+            AnsiConsole.MarkupLine($"[bold yellow]>> {agent.Name} <<[/]");
+            AnsiConsole.MarkupLine($"{response}");
             
             return response;
         }
