@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Net.Http.Json;
 using System.Text;
 
 namespace Orchestrator {
@@ -27,6 +28,8 @@ namespace Orchestrator {
 
         public required ChatAgentOptions Options { get; init; }
 
+        public IList<ChatMessage> Messages { get; init; } = new List<ChatMessage>();
+
         public static ChatAgent Create(string name, string serviceUrl, ChatAgentOptions options) {
             return new ChatAgent {
                 Name = name,
@@ -35,15 +38,25 @@ namespace Orchestrator {
             };
         }
 
-        public async Task<string> Chat(string message, HttpClient client, CancellationToken token) {
+        public async Task<string> SendMessageAndProcessAnswer(string message, HttpClient client, CancellationToken token) {
             var payload = CreatePayload(message);
 
             using var response = await client.PostAsync(ServiceUrl, payload, token);
-            response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadAsStringAsync(token);
-            var model = JsonConvert.DeserializeObject<ChatResponse>(result);
+            
+            return await HandleResponse(response, token);
+        }
 
-            return model?.Choices.FirstOrDefault()?.Message.Content ?? string.Empty;
+        private async Task<string> HandleResponse(HttpResponseMessage response, CancellationToken token) {
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ChatResponse>(token);
+            var message = result?.Choices.FirstOrDefault()?.Message.Content ?? string.Empty;
+
+            Messages.Add(new ChatMessage {
+                Message = message
+            });
+
+            return message;
         }
 
         private StringContent CreatePayload(string message) {

@@ -30,4 +30,9 @@
             public int Total_Tokens { get; set; }
         }
     }
+
+    internal class ChatMessage {
+        public readonly DateTime TimeStamp = DateTime.Now;
+        public required string Message { get; init; }
+    }
 }
